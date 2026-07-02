@@ -1,0 +1,6 @@
+@VideoWallApi_HostAddress = http://localhost:5144
+
+GET {{VideoWallApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
