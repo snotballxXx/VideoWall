@@ -9,7 +9,8 @@ builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)));
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
@@ -34,4 +35,4 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.MapControllers();
-app.Run("http://0.0.0.0:5000");
+app.Run("http://0.0.0.0:5001");
