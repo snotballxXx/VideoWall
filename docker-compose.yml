@@ -7,10 +7,12 @@ services:
       - "3000:3000"
     restart: unless-stopped
 
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "5000:5000"
-  #   restart: unless-stopped
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=192.168.1.176;Database=videowall;User=root;Password=password;
