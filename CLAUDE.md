@@ -2,24 +2,32 @@
 
 ## Project Overview
 
-This project is to provide a user of a surveillance system the ability to view up to 4 cameras NVR style.
-The cameras are to be displayed taking up the full screen and divided into 4 quarters.
-Doubling clicking one of the quarters will display that view in full screen, Esc key goes back to multi-view.
-
-Panning and zoom functionality is to be provided when a camera view is in full screen
+A browser-based NVR-style surveillance video wall. Users can view unlimited cameras across multiple configurable layouts. Each layout defines a grid (rows × columns); each cell can be assigned a camera stream URL.
 
 ## Architecture
 
-- Frontend: Next.js (TypeScript) — located in `/frontend`
-- Backend: C# ASP.NET Core — located in `/backend`
+- **Frontend:** Next.js 16 (TypeScript, App Router, Tailwind CSS v4) — `/frontend` — port 3000
+- **Backend:** C# ASP.NET Core 8 Web API — `/backend` — port 5000
+- **Database:** MySQL via Pomelo EF Core provider
 
 ## Repository Structure
 
 ```
 /
-├── frontend/       # Next.js app
-├── backend/        # C# API
-└── ...
+├── frontend/
+│   ├── src/
+│   │   ├── app/            # layout.tsx, page.tsx, globals.css
+│   │   ├── components/     # VideoWall.tsx, SettingsPanel.tsx, ThemeProvider.tsx
+│   │   ├── lib/            # api.ts (typed API client)
+│   │   └── types/          # index.ts (Layout, Camera interfaces)
+│   └── Dockerfile
+├── backend/
+│   ├── Controllers/        # LayoutsController.cs, CamerasController.cs
+│   ├── Models/             # Layout.cs, Camera.cs
+│   ├── DTOs/               # LayoutDtos.cs
+│   ├── Data/               # AppDbContext.cs
+│   └── Program.cs
+└── docker-compose.yml
 ```
 
 ## Getting Started
@@ -28,114 +36,108 @@ Panning and zoom functionality is to be provided when a camera view is in full s
 
 - Node.js >= 20
 - .NET 8 SDK
+- MySQL server
 
 ### Running Locally
 
-**Frontend**
-
 ```bash
-# commands to start the frontend dev server
-```
+# Backend (port 5000)
+cd backend && dotnet run
 
-**Backend**
-
-```bash
-# commands to start the backend
+# Frontend (port 3000)
+cd frontend && npm install && npm run dev
 ```
 
 ## Key Commands
 
-| Command         | Description              |
-| --------------- | ------------------------ |
-| `npm run dev`   | Start Next.js dev server |
-| `dotnet run`    | Start C# backend         |
-| `npm run build` | Build frontend           |
-| `dotnet build`  | Build backend            |
-| `npm run test`  | Run frontend tests       |
-| `dotnet test`   | Run backend tests        |
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start Next.js dev server |
+| `dotnet run` | Start C# backend |
+| `npm run build` | Build frontend |
+| `dotnet build` | Build backend |
 
 ## Environment Variables
 
-<!-- List required env vars and where to find/set them, e.g.:
-| Variable | Description | Example |
-|----------|-------------|---------|
+| Variable | Description | Default |
+| --- | --- | --- |
 | `NEXT_PUBLIC_API_URL` | Backend API base URL | `http://localhost:5000` |
-| `DATABASE_URL` | Connection string | `...` |
--->
 
 ## Coding Conventions
 
 - TypeScript strict mode enforced
-- Use `PascalCase` for C# classes, `camelCase` for TS variables
+- `PascalCase` for C# classes, `camelCase` for TS variables
 - API controllers follow REST conventions
-- CSS via Tailwind / CSS Modules / styled-components
-
-## Testing
-
-- Unit tests:
-- Integration tests:
-- E2E tests:
-
-## Deployment
-
-<!-- How and where the app is deployed:
-- Frontend:
-- Backend:
-- CI/CD:
--->
+- CSS via Tailwind CSS v4
 
 ## Important Notes
 
-The backend will be used to store user details for authentication, and camera feed URLs.
+Camera video feeds are accessed directly from the browser as cross-origin iframes — no proxying through the backend. The backend stores layout/camera config only.
 
-Camera video feeds will be accessed directly from the front end  
-Example URLs:  
-camera1: - http://192.168.1.100:1984/stream.html?src=camera1_main  
-camera2: - http://192.168.1.100:1984/stream.html?src=camera2_main  
-camera3: - http://192.168.1.100:1984/stream.html?src=camera3_main  
-camera4: - http://192.168.1.100:1984/stream.html?src=camera4_main
+Authentication is planned for a future phase (backend is structured to support it).
 
-<!-- Anything Claude should be aware of:
-- Known gotchas or quirks
-- Areas of the codebase that are sensitive or complex
-- Third-party integrations
--->
+## Backend Implementation Notes
+
+### Database
+- MySQL via `Pomelo.EntityFrameworkCore.MySql` 8.x
+- Connection string in `backend/appsettings.json` under `ConnectionStrings:DefaultConnection`
+- `EnsureCreated()` at startup — creates database and tables automatically if they don't exist
+- Server version hardcoded as `MySqlServerVersion(8, 0, 0)` to avoid requiring a live connection at startup just for version detection
+
+### Models
+- `Layout` — id, name, rows, columns, order
+- `Camera` — id, layoutId (FK cascade), name, url, enabled, row, column
+
+### API Endpoints
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/layouts` | All layouts with cameras, ordered by `Order` |
+| POST | `/api/layouts` | Create layout |
+| PUT | `/api/layouts/{id}` | Update layout; removes cameras outside new grid bounds |
+| DELETE | `/api/layouts/{id}` | Delete layout and cameras (cascade) |
+| POST | `/api/cameras` | Create/upsert camera at row/col position |
+| PUT | `/api/cameras/{id}` | Update camera name/url/enabled |
+| DELETE | `/api/cameras/{id}` | Remove camera (clears cell) |
 
 ## Frontend Implementation Notes
 
 ### Stack
 - Next.js 16 (App Router) with TypeScript strict mode
 - Tailwind CSS v4 — uses `@import "tailwindcss"` not the legacy config file
-- Class-based dark mode configured via `@custom-variant dark (&:where(.dark, .dark *))` in `globals.css`
+- Class-based dark mode via `@custom-variant dark (&:where(.dark, .dark *))` in `globals.css`
 
-### Camera Config (`frontend/src/components/VideoWall.tsx`)
-Cameras are defined as a hardcoded array at the top of `VideoWall.tsx`. Each entry has:
-- `id` — numeric identifier
-- `label` — display name shown as overlay
-- `url` — full iframe URL to the stream
-- `enabled` — set to `false` to immediately treat as offline without polling
+### Key Components
 
-Camera 4 is currently `enabled: false` while its stream is being resolved.
+**`VideoWall.tsx`**
+- Fetches layouts from API on mount
+- Tab bar shown when more than one layout exists
+- Renders a dynamic CSS grid (`rows × columns`) per layout
+- Empty cells show their coordinates; they cannot be clicked or expanded
+- Offline cells: no hover highlight, not-allowed cursor, double-click blocked
+
+**`SettingsPanel.tsx`**
+- Modal opened via gear icon in header
+- Left sidebar: layout list + add new layout
+- Right panel: layout name/rows/cols (saved on blur), camera cell grid
+- Click a cell → inline form (name, URL, enabled checkbox, save, clear)
+- Closing the panel triggers `window.location.reload()` to pick up changes
+
+**`ThemeProvider.tsx`**
+- Toggles `dark` class on `<html>` element
+- Persisted to `localStorage` under key `vw-theme`
+- Defaults to dark
+
+**`api.ts`**
+- All fetch calls go to `NEXT_PUBLIC_API_URL` (default `http://localhost:5000`)
+- Typed wrappers for all layout and camera endpoints
 
 ### Offline Detection
-- On mount and every 30 seconds, each enabled camera URL is fetched with `mode: 'no-cors'` and a 5-second `AbortController` timeout
-- Any network failure or timeout → status set to `'offline'`
-- Disabled cameras (`enabled: false`) are skipped and immediately set to `'offline'`
-- Offline cameras show a struck-through camera SVG icon with "Camera Offline" text
-- The offline overlay is theme-aware (light/dark)
-
-### Theme
-- `ThemeProvider` component wraps the app and toggles the `dark` class on `<html>`
-- Preference is persisted to `localStorage` under the key `vw-theme`
-- Defaults to dark on first load
-
-### Grid View
-- 2×2 fixed layout filling the full viewport
-- Cameras embedded as cross-origin iframes with `pointer-events: none`
-- Double-click any cell to enter single-camera fullscreen view
+- On mount and every 30 seconds, all enabled cameras are polled via `fetch` with `mode: 'no-cors'` and a 5-second `AbortController` timeout
+- Cameras with `enabled: false` or empty `url` are immediately marked offline without polling
+- Offline cameras show a struck-through camera SVG icon with "Camera Offline" text (theme-aware)
+- iframes are not rendered when url is empty or camera is offline
 
 ### Fullscreen (single camera) View
 - Scroll wheel zooms toward cursor position (1×–8×)
 - Click and drag to pan
-- Esc key or "← Grid" button returns to grid view
-- iframe is unmounted when a camera is offline (replaced by offline overlay)
+- Esc key or "← Grid" button returns to grid
