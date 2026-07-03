@@ -22,6 +22,7 @@ export default function SettingsPanel({ layouts: initial, onClose }: Props) {
   const [cellForm, setCellForm] = useState<CellFormState>({ name: '', url: '', enabled: true })
   const [saving, setSaving] = useState(false)
   const [newLayoutName, setNewLayoutName] = useState('')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const selected = layouts.find(l => l.id === selectedId) ?? null
 
@@ -109,11 +110,12 @@ export default function SettingsPanel({ layouts: initial, onClose }: Props) {
   }
 
   async function deleteLayout() {
-    if (!selected || !confirm(`Delete "${selected.name}"?`)) return
+    if (!selected) return
     await api.layouts.delete(selected.id)
     const remaining = layouts.filter(l => l.id !== selected.id)
     setLayouts(remaining)
     setSelectedId(remaining[0]?.id ?? null)
+    setConfirmingDelete(false)
   }
 
   return (
@@ -140,7 +142,7 @@ export default function SettingsPanel({ layouts: initial, onClose }: Props) {
               {layouts.map(l => (
                 <li key={l.id}>
                   <button
-                    onClick={() => { setSelectedId(l.id); setEditingCell(null) }}
+                    onClick={() => { setSelectedId(l.id); setEditingCell(null); setConfirmingDelete(false) }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                       l.id === selectedId
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
@@ -293,12 +295,33 @@ export default function SettingsPanel({ layouts: initial, onClose }: Props) {
 
               {/* Delete layout */}
               <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={deleteLayout}
-                  className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"
-                >
-                  Delete this layout
-                </button>
+                {confirmingDelete ? (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <p className="text-xs text-red-700 dark:text-red-300 flex-1">
+                      Delete <span className="font-semibold">{selected?.name}</span>? This removes all its cameras too.
+                    </p>
+                    <button
+                      onClick={deleteLayout}
+                      disabled={saving}
+                      className="text-xs px-3 py-1.5 rounded bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors shrink-0"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDelete(false)}
+                      className="text-xs px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+                  >
+                    Delete this layout
+                  </button>
+                )}
               </div>
             </div>
           ) : (
