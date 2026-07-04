@@ -1,0 +1,11 @@
+rsync -av --delete \
+  --exclude 'bin/' \
+  --exclude 'obj/' \
+  /mnt/c/Users/peter/Documents/Projects/VideoWall/backend \
+  pete@frigate:/home/pete/VideoWall/
+  
+rsync -av --delete \
+  --exclude 'node_modules/' \
+  /mnt/c/Users/peter/Documents/Projects/VideoWall/frontend \
+  pete@frigate:/home/pete/VideoWall/
+

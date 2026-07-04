@@ -1,0 +1,179 @@
+mqtt:
+  enabled: true
+  user: mqttuser
+  password: mqttuserpassword
+  host: 192.168.1.120
+  topic_prefix: frigate
+
+detectors:
+  coral:
+    type: edgetpu
+    device: usb
+
+go2rtc:
+  streams:
+    camera1_main:
+      - rtsp://admin:<PASSWORD>@192.168.1.101:554/cam/realmonitor?channel=1&subtype=0
+    camera1_sub:
+      - rtsp://admin:<PASSWORD>@192.168.1.101:554/cam/realmonitor?channel=1&subtype=1
+    camera2_main:
+      - rtsp://admin:<PASSWORD>@192.168.1.102:554/cam/realmonitor?channel=1&subtype=0
+    camera2_sub:
+      - rtsp://admin:<PASSWORD>@192.168.1.102:554/cam/realmonitor?channel=1&subtype=1
+    camera3_main:
+      - rtsp://admin:<PASSWORD>@192.168.1.103:554/cam/realmonitor?channel=1&subtype=0
+    camera3_sub:
+      - rtsp://admin:<PASSWORD>@192.168.1.103:554/cam/realmonitor?channel=1&subtype=1
+    camera4_main:
+      - rtsp://admin:<PASSWORD>@192.168.1.104/1
+    camera4_sub:
+      - rtsp://admin:<PASSWORD>@192.168.1.104/0
+
+objects:
+  track:
+    - person
+    - car
+
+cameras:
+  camera1:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://localhost:8554/camera1_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://localhost:8554/camera1_main?video=copy
+          roles:
+            - record
+    detect:
+      enabled: true
+      width: 704
+      height: 480
+      fps: 5
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+
+    zones:
+      GateZone1:
+        coordinates: 0.217,0.098,0.357,0.075,0.41,0.085,0.5,0.106,0.571,0.122,0.497,0.202,0.436,0.176,0.361,0.147,0.297,0.125
+        objects:
+          - car
+          - person
+        inertia: 3
+        loitering_time: 0
+      GateZone2:
+        coordinates: 0.506,0.202,0.58,0.123,0.675,0.155,0.769,0.197,0.824,0.226,0.849,0.242,0.881,0.462,0.795,0.396,0.707,0.323,0.591,0.251
+        objects:
+          - car
+          - person
+        inertia: 3
+        loitering_time: 0
+      PedestrianZone1:
+        coordinates: 0.136,1,0.08,0.646,0.049,0.256,0.203,0.102,0.493,0.212,0.683,0.322,0.884,0.474,0.91,1
+        loitering_time: 0
+        inertia: 3
+    motion:
+      mask: 0.002,0,1,0,0.998,0.995,0.923,0.995,0.893,0.233,0.694,0.133,0.428,0.066,0.287,0.075,0.199,0.089,0.168,0.121,0.125,0.163,0.086,0.204,0.043,0.246,0.086,0.768,0.128,0.999,0.001,0.996
+
+    review:
+      alerts:
+        required_zones:
+          - GateZone1
+          - GateZone2
+          - PedestrianZone1
+      detections:
+        required_zones:
+          - GateZone1
+          - GateZone2
+          - PedestrianZone1
+  camera2:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://localhost:8554/camera2_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://localhost:8554/camera2_main?video=copy
+          roles:
+            - record
+    detect:
+      enabled: true
+      width: 704
+      height: 480
+      fps: 5
+
+    objects:
+      track:
+        - person
+        - car
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+
+    motion:
+      mask: 0,0.209,0.314,0.112,0.582,0.105,0.584,0.051,0.667,0.075,0.771,0.083,1,0.085,1,0,0,0
+
+  camera3:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://localhost:8554/camera3_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://localhost:8554/camera3_main?video=copy
+          roles:
+            - record
+    detect:
+      enabled: true
+      width: 704
+      height: 480
+      fps: 5
+
+    objects:
+      track:
+        - person
+        - car
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+
+    motion:
+      mask: 0.244,1,0.217,0.074,0.415,0.063,0.565,0.093,1,0.268,1,0,0.001,0,0,1
+
+    snapshots:
+      enabled: true
+
+  camera4:
+    enabled: false
+    ffmpeg:
+      inputs:
+        - path: rtsp://localhost:8554/camera4_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://localhost:8554/camera4_main?video=copy
+          roles:
+            - record
+    detect:
+      enabled: false
+      width: 704
+      height: 480
+      fps: 5
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+
+logger:
+  default: info
+  logs:
+    frigate.mqtt: debug
+
+version: 0.15-1

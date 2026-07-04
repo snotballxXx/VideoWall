@@ -7,7 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+var connectionString = builder.Configuration.GetConnectionString("Default")!;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)),
         mySqlOptions => mySqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)));
@@ -17,6 +17,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod()));
+
+builder.Configuration.AddEnvironmentVariables();
 
 var app = builder.Build();
 
