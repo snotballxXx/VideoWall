@@ -91,6 +91,8 @@ Open [http://localhost:3000](http://localhost:3000). Use the gear icon to config
 docker-compose up --build
 ```
 
+Starts both frontend (port 3000) and backend (port 5000). To override the database connection string without editing `appsettings.json`, update the `ConnectionStrings__DefaultConnection` value in `docker-compose.yml`.
+
 ### Building for Production
 
 ```bash

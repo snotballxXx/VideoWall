@@ -1,5 +1,28 @@
+
 services:
+  frigate:
+    container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable
+    privileged: true
+    restart: unless-stopped
+    shm_size: '512mb'
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - ./config:/config
+      - ./storage:/media/frigate
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "5000:5000"  # Web UI
+      - "8554:8554"  # RTSP
+      - "1935:1935"  # RTMP
+      - "1984:1984"  # go2rtc
+
   db:
+    container_name: db
     image: mysql:8
     restart: unless-stopped
     environment:
@@ -7,36 +30,37 @@ services:
       - MYSQL_ROOT_PASSWORD=password
     volumes:
       - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  videowall-api:
+    container_name: videowall-api
+    image: videowall-api:latest
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__Default=Server=db;Database=videowall;User=root;Password=password;
     ports:
       - "5001:5001"
+
+  videowall:
+    container_name: videowall
+    image: videowall:latest
+    privileged: true
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      - videowall-api
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=videowall;User=root;Password=password;
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      - BACKEND_URL=http://videowall-api:5001
     ports:
       - "3000:3000"
-    restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      - BACKEND_URL=http://backend:5001
 
 volumes:
   db_data:
