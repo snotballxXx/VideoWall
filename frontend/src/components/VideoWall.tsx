@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import type { Camera, Layout } from '@/types'
 
 const POLL_INTERVAL_MS = 30_000
+const RECORDING_POLL_INTERVAL_MS = 5_000
 const MIN_ZOOM = 1
 const MAX_ZOOM = 8
 
@@ -80,6 +81,7 @@ export default function VideoWall() {
   const [statuses, setStatuses] = useState<Record<string, CameraStatus>>({})
   const [showSettings, setShowSettings] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [recordingCameraIds, setRecordingCameraIds] = useState<Set<number>>(new Set())
 
   const loadLayouts = useCallback(() => {
     return api.layouts.getAll()
@@ -118,6 +120,24 @@ export default function VideoWall() {
     const timer = setInterval(pollAll, POLL_INTERVAL_MS)
     return () => { cancelled = true; clearInterval(timer) }
   }, [layouts])
+
+  // Poll for any in-progress timelapse capture
+  useEffect(() => {
+    let cancelled = false
+
+    async function pollRecording() {
+      try {
+        const jobs = await api.timelapses.list()
+        if (!cancelled) setRecordingCameraIds(new Set(jobs.filter(j => j.status === 'Running').map(j => j.cameraId)))
+      } catch {
+        if (!cancelled) setRecordingCameraIds(new Set())
+      }
+    }
+
+    pollRecording()
+    const timer = setInterval(pollRecording, RECORDING_POLL_INTERVAL_MS)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [])
 
   const transformRef = useRef(transform)
   transformRef.current = transform
@@ -246,6 +266,12 @@ export default function VideoWall() {
         </div>
 
         <div className="flex items-center gap-1">
+          {recordingCameraIds.size > 0 && (
+            <span className="flex items-center gap-1.5 px-2 text-xs font-medium text-red-500 select-none" title="A timelapse capture is running">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              Recording
+            </span>
+          )}
           <button onClick={handleRefresh} disabled={refreshing} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" title="Refresh">
             <RefreshIcon spinning={refreshing} />
           </button>
@@ -305,8 +331,11 @@ export default function VideoWall() {
 
                   {camera && !offline && (
                     <>
-                      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded select-none pointer-events-none">
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 text-white text-xs px-2 py-0.5 rounded select-none pointer-events-none">
                         {camera.name}
+                        {recordingCameraIds.has(camera.id) && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" title="Capturing timelapse" />
+                        )}
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         <span className="bg-black/50 text-white text-xs px-3 py-1.5 rounded-full">Double-click to expand</span>

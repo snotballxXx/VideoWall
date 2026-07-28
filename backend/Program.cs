@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using VideoWallApi.Data;
+using VideoWallApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
+builder.Services.AddHostedService<TimelapseCaptureService>();
 
 var connectionString = builder.Configuration.GetConnectionString("Default")!;
 builder.Services.AddDbContext<AppDbContext>(options =>

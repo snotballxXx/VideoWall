@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<Layout> Layouts => Set<Layout>();
     public DbSet<Camera> Cameras => Set<Camera>();
+    public DbSet<TimelapseJob> TimelapseJobs => Set<TimelapseJob>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -14,6 +15,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(c => c.Layout)
             .WithMany(l => l.Cameras)
             .HasForeignKey(c => c.LayoutId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TimelapseJob>()
+            .HasOne(t => t.Camera)
+            .WithMany()
+            .HasForeignKey(t => t.CameraId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

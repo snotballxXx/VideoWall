@@ -13,6 +13,18 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
 
   const res = await fetch(url, init)
   if (res.status === 204) return new NextResponse(null, { status: 204 })
+
+  const contentType = res.headers.get('content-type') ?? ''
+  if (!contentType.includes('application/json')) {
+    return new NextResponse(res.body, {
+      status: res.status,
+      headers: {
+        'content-type': contentType,
+        'content-disposition': res.headers.get('content-disposition') ?? '',
+      },
+    })
+  }
+
   const data = await res.json()
   return NextResponse.json(data, { status: res.status })
 }

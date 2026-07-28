@@ -47,6 +47,8 @@ services:
       - db
     environment:
       - ConnectionStrings__Default=Server=db;Database=videowall;User=root;Password=password;
+    volumes:
+      - ./storage/timelapse:/app/timelapse-storage
     ports:
       - "5001:5001"
 

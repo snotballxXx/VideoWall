@@ -1,4 +1,4 @@
-import type { Camera, Layout } from '@/types'
+import type { Camera, Layout, TimelapseJob } from '@/types'
 
 const API = ''
 
@@ -29,5 +29,16 @@ export const api = {
       request<Camera>(`/api/cameras/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
       request<void>(`/api/cameras/${id}`, { method: 'DELETE' }),
+  },
+  timelapses: {
+    list: (cameraId?: number) =>
+      request<TimelapseJob[]>(cameraId === undefined ? '/api/timelapses' : `/api/timelapses?cameraId=${cameraId}`),
+    create: (data: { cameraId: number; intervalSeconds: number }) =>
+      request<TimelapseJob>('/api/timelapses', { method: 'POST', body: JSON.stringify(data) }),
+    stop: (id: number) =>
+      request<TimelapseJob>(`/api/timelapses/${id}/stop`, { method: 'POST' }),
+    delete: (id: number) =>
+      request<void>(`/api/timelapses/${id}`, { method: 'DELETE' }),
+    downloadUrl: (id: number) => `${API}/api/timelapses/${id}/download`,
   },
 }

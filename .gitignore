@@ -41,6 +41,10 @@ next-env.d.ts
 bin/
 obj/
 
+# Timelapse capture output (local dev and docker-compose volume)
+backend/timelapse-storage/
+storage/
+
 # User-specific files
 *.user
 *.suo
