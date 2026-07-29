@@ -1,11 +1,13 @@
 rsync -av --delete \
   --exclude 'bin/' \
   --exclude 'obj/' \
+  --exclude 'timelapse-storage/' \
   /mnt/c/Users/peter/Documents/Projects/VideoWall/backend \
-  pete@frigate:/home/pete/VideoWall/
+  pete@frigate:/home/pete/video-wall/
   
 rsync -av --delete \
   --exclude 'node_modules/' \
+  --exclude '.next/' \
   /mnt/c/Users/peter/Documents/Projects/VideoWall/frontend \
-  pete@frigate:/home/pete/VideoWall/
+  pete@frigate:/home/pete/video-wall/
 

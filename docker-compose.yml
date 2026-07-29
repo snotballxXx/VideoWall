@@ -22,6 +22,9 @@ services:
     image: videowall-api:latest
     privileged: true
     restart: unless-stopped
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     depends_on:
       - db
     environment:
@@ -36,6 +39,9 @@ services:
     image: videowall:latest
     privileged: true
     restart: unless-stopped
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     depends_on:
       - videowall-api
     environment:
