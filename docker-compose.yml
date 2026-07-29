@@ -1,33 +1,12 @@
-
 services:
-  frigate:
-    container_name: frigate
-    image: ghcr.io/blakeblackshear/frigate:stable
-    privileged: true
-    restart: unless-stopped
-    shm_size: '512mb'
-    devices:
-      - /dev/bus/usb:/dev/bus/usb
-    volumes:
-      - ./config:/config
-      - ./storage:/media/frigate
-      - type: tmpfs
-        target: /tmp/cache
-        tmpfs:
-          size: 1000000000
-    ports:
-      - "5000:5000"  # Web UI
-      - "8554:8554"  # RTSP
-      - "1935:1935"  # RTMP
-      - "1984:1984"  # go2rtc
-
   db:
     container_name: db
-    image: mysql:8
+    image: mysql:8.0
     restart: unless-stopped
     environment:
       - MYSQL_DATABASE=videowall
       - MYSQL_ROOT_PASSWORD=password
+    command: --default-authentication-plugin=mysql_native_password
     volumes:
       - db_data:/var/lib/mysql
     ports:
